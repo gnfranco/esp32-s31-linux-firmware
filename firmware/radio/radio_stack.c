@@ -780,11 +780,16 @@ void s31_radio_wifi_connect_task(void *arg)
 	if (params->has_bssid)
 		memcpy(config.sta.bssid, params->bssid, sizeof(config.sta.bssid));
 	if (params->enterprise) {
+#ifdef S31_NO_IDF_EAP
+		rc = ESP_ERR_NOT_SUPPORTED;
+		goto failed;
+#else
 		if (!s31_eap_enabled) {
 			rc = ESP_ERR_INVALID_STATE;
 			goto failed;
 		}
 		config.sta.threshold.authmode = WIFI_AUTH_WPA2_ENTERPRISE;
+#endif
 	} else if (params->has_password) {
 		memcpy(config.sta.password, params->password,
 		       params->password_length);
@@ -856,6 +861,7 @@ int s31_radio_wifi_try_send_interface(uint8_t interface, uint8_t *frame, uint16_
 	return esp_wifi_internal_tx(WIFI_IF_AP, frame, length);
 }
 
+#ifndef S31_NO_IDF_EAP
 static void s31_wifi_eap_clear(void)
 {
 	unsigned int i;
@@ -953,6 +959,8 @@ static int s31_wifi_eap_control(const struct s31_wifi_control *request)
  * Keep its large configuration object and cold setup in XIP, reserving SRAM
  * for the controller scheduler's admission deadline path. Vendor calls keep
  * their original ordering and restore their own temporary cache state. */
+#endif
+
 static int __attribute__((noinline)) s31_wifi_ap_start_control(
 	const struct s31_wifi_control *request)
 {
@@ -1083,7 +1091,11 @@ void s31_radio_wifi_control_task(void *arg)
 	case S31_WIFI_EAP_WRITE:
 	case S31_WIFI_EAP_COMMIT:
 	case S31_WIFI_EAP_CLEAR:
+#ifndef S31_NO_IDF_EAP
 		rc = s31_wifi_eap_control(request);
+#else
+		rc = ESP_ERR_NOT_SUPPORTED;
+#endif
 		break;
 	case S31_WIFI_AP_START:
 		rc = s31_wifi_ap_start_control(request);

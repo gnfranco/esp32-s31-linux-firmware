@@ -216,6 +216,10 @@ s31_pp_submit.S: $(IDF_PP) $(PROJECT_DIR)/tools/build/radio_pp_submit.py
 s31_pp_submit.o: s31_pp_submit.S $(RADIO_MAKEFILE)
 	$(ESP_CC) $(ESP_CFLAGS) -c $< -o $@
 RADIO_STACK_DEFS := -DS31_LINUX_SMODE
+S31_NO_IDF_EAP ?= 0
+ifeq ($(S31_NO_IDF_EAP),1)
+RADIO_STACK_DEFS += -DS31_NO_IDF_EAP
+endif
 ifeq ($(S31_WIFI_ONLY),1)
 RADIO_STACK_DEFS += -DS31_WIFI_ONLY
 endif
